@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  filebrowser:
+    image: filebrowser/filebrowser:latest
+    container_name: homelab-filebrowser
+    restart: unless-stopped
+    ports:
+      - "8080:80"  # Access from work laptop via http://your-home-ip:8080
+    volumes:
+      - ./data:/srv  # File storage directory
+      - ./config:/config  # FileBrowser config
+      - ./database:/database  # User database
+    environment:
+      - FB_DATABASE=/database/filebrowser.db
+      - FB_ROOT=/srv
+      - FB_PORT=80
+      - FB_ADDRESS=0.0.0.0
+      - FB_LOG=/var/log/filebrowser.log
+    networks:
+      - homelab-network
+
+  # Optional: Add a reverse proxy for better security
+  nginx:
+    image: nginx:alpine
+    container_name: homelab-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - filebrowser
+    networks:
+      - homelab-network
+
+  # Optional: Add a database for advanced features
+  postgres:
+    image: postgres:15-alpine
+    container_name: homelab-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=filebrowser
+      - POSTGRES_USER=filebrowser
+      - POSTGRES_PASSWORD=changeme123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - homelab-network
+
+networks:
+  homelab-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

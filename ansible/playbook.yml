@@ -1,0 +1,115 @@
+---
+- name: Setup Homelab FileBrowser
+  hosts: localhost
+  become: yes
+  vars:
+    filebrowser_port: 8080
+    filebrowser_data_dir: /opt/homelab/data
+    filebrowser_config_dir: /opt/homelab/config
+    filebrowser_database_dir: /opt/homelab/database
+
+  tasks:
+    - name: Update system packages
+      apt:
+        update_cache: yes
+        upgrade: yes
+      when: ansible_os_family == "Debian"
+
+    - name: Install Docker
+      apt:
+        name: docker.io
+        state: present
+      when: ansible_os_family == "Debian"
+
+    - name: Install Docker Compose
+      pip:
+        name: docker-compose
+        state: present
+
+    - name: Start and enable Docker service
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Add user to docker group
+      user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: yes
+
+    - name: Create homelab directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0755'
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+      loop:
+        - "{{ filebrowser_data_dir }}"
+        - "{{ filebrowser_config_dir }}"
+        - "{{ filebrowser_database_dir }}"
+
+    - name: Install kubectl
+      shell: |
+        curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+        chmod +x kubectl
+        mv kubectl /usr/local/bin/
+      args:
+        creates: /usr/local/bin/kubectl
+
+    - name: Install minikube
+      shell: |
+        curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+        chmod +x minikube-linux-amd64
+        mv minikube-linux-amd64 /usr/local/bin/minikube
+      args:
+        creates: /usr/local/bin/minikube
+
+    - name: Start minikube
+      shell: minikube start --driver=docker
+      environment:
+        HOME: "{{ ansible_env.HOME }}"
+      args:
+        creates: /home/{{ ansible_user }}/.minikube
+
+    - name: Copy homelab files
+      copy:
+        src: "{{ item }}"
+        dest: "/opt/homelab/{{ item | basename }}"
+        mode: '0644'
+      loop:
+        - "docker-compose.yml"
+        - "k8s/"
+
+    - name: Start FileBrowser with Docker Compose
+      docker_compose:
+        project_src: /opt/homelab
+        state: present
+      become_user: "{{ ansible_user }}"
+
+    - name: Deploy to Kubernetes
+      k8s:
+        state: present
+        definition: "{{ lookup('file', '/opt/homelab/k8s/' + item) }}"
+      loop:
+        - namespace.yaml
+        - configmap.yaml
+        - pvc.yaml
+        - deployment.yaml
+        - service.yaml
+        - ingress.yaml
+      when: minikube_status.rc == 0
+
+    - name: Check minikube status
+      shell: minikube status
+      register: minikube_status
+      ignore_errors: yes
+
+    - name: Display access information
+      debug:
+        msg:
+          - "FileBrowser is now running!"
+          - "Docker Compose: http://localhost:{{ filebrowser_port }}"
+          - "Kubernetes: kubectl port-forward svc/filebrowser-service 8080:80 -n homelab"
+          - "Then access: http://localhost:8080"

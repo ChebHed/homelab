@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: filebrowser
+  namespace: homelab
+  labels:
+    app: filebrowser
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: filebrowser
+  template:
+    metadata:
+      labels:
+        app: filebrowser
+    spec:
+      containers:
+      - name: filebrowser
+        image: filebrowser/filebrowser:latest
+        ports:
+        - containerPort: 80
+        env:
+        - name: FB_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: filebrowser-config
+              key: FB_DATABASE
+        - name: FB_ROOT
+          valueFrom:
+            configMapKeyRef:
+              name: filebrowser-config
+              key: FB_ROOT
+        - name: FB_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: filebrowser-config
+              key: FB_PORT
+        - name: FB_ADDRESS
+          valueFrom:
+            configMapKeyRef:
+              name: filebrowser-config
+              key: FB_ADDRESS
+        - name: FB_LOG
+          valueFrom:
+            configMapKeyRef:
+              name: filebrowser-config
+              key: FB_LOG
+        volumeMounts:
+        - name: data-volume
+          mountPath: /srv
+        - name: config-volume
+          mountPath: /config
+        - name: database-volume
+          mountPath: /database
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: data-volume
+        persistentVolumeClaim:
+          claimName: filebrowser-data
+      - name: config-volume
+        persistentVolumeClaim:
+          claimName: filebrowser-config
+      - name: database-volume
+        persistentVolumeClaim:
+          claimName: filebrowser-database

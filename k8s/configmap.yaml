@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: filebrowser-config
+  namespace: homelab
+data:
+  FB_DATABASE: "/database/filebrowser.db"
+  FB_ROOT: "/srv"
+  FB_PORT: "80"
+  FB_ADDRESS: "0.0.0.0"
+  FB_LOG: "/var/log/filebrowser.log"
