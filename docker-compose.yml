@@ -6,7 +6,7 @@ services:
     container_name: homelab-filebrowser
     restart: unless-stopped
     ports:
-      - "8080:80"  # Access from work laptop via http://your-home-ip:8080
+      - "0.0.0.0:8082:80"
     volumes:
       - ./data:/srv  # File storage directory
       - ./config:/config  # FileBrowser config
