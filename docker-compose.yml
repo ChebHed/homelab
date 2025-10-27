@@ -9,14 +9,9 @@ services:
       - "0.0.0.0:8082:80"
     volumes:
       - ./data:/srv  # File storage directory
-      - ./config:/config  # FileBrowser config
-      - ./database:/database  # User database
-    environment:
-      - FB_DATABASE=/database/filebrowser.db
-      - FB_ROOT=/srv
-      - FB_PORT=80
-      - FB_ADDRESS=0.0.0.0
-      - FB_LOG=/var/log/filebrowser.log
+      - ./filebrowser-config:/config  # FileBrowser config (persistent)
+      - ./filebrowser-database:/database  # FileBrowser database (persistent)
+    command: ["--config", "/config/settings.json", "--database", "/database/filebrowser.db"]
     networks:
       - homelab-network
 

@@ -1,0 +1,41 @@
+{
+  "port": 80,
+  "baseURL": "",
+  "address": "0.0.0.0",
+  "log": "stdout",
+  "database": "/database/filebrowser.db",
+  "root": "/srv",
+  "auth": {
+    "method": "json",
+    "header": ""
+  },
+  "signup": false,
+  "createUserDir": false,
+  "defaults": {
+    "scope": "/srv",
+    "locale": "en",
+    "viewMode": "list",
+    "singleClick": false,
+    "sorting": {
+      "by": "name",
+      "asc": true
+    },
+    "perm": {
+      "admin": false,
+      "execute": true,
+      "create": true,
+      "rename": true,
+      "modify": true,
+      "delete": true,
+      "share": true,
+      "download": true
+    }
+  },
+  "shell": [],
+  "branding": {
+    "name": "",
+    "disableExternal": false,
+    "files": "",
+    "theme": ""
+  }
+}
